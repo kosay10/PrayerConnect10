@@ -3,122 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مسح الباركود</title>
-    <link rel="stylesheet" href="style.css">
+    <title>مسح الكود</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
 </head>
 <body>
-    <h1>مسح الباركود</h1>
-    <p id="message">يرجى الانتظار... نحن نقوم بتسجيل حضورك.</p>
-
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js"></script>
+    <h1>مسح الكود</h1>
+    <div id="message"></div>
     <script>
-        // Firebase Configuration
+        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyANgfVGiNHh4U_R2eKsGfW9mcHV7H3fKdk",
             authDomain: "mosqueattendance.firebaseapp.com",
             projectId: "mosqueattendance",
-            storageBucket: "mosqueattendance.firebasestorage.app",
+            storageBucket: "mosqueattendance.appspot.com",
             messagingSenderId: "613541777430",
             appId: "1:613541777430:web:5047a4d02dac211268e537",
-            measurementId: "G-T0G8HN00M9"
+            measurementId: "G-T0G8HN00M9",
+            databaseURL: "https://mosqueattendance-default-rtdb.firebaseio.com/"
         };
 
+        // Initialize Firebase
         const app = firebase.initializeApp(firebaseConfig);
-        const database = firebase.database(app);
+        const database = firebase.database();
 
-        // זמני התפילות בלוד
+        // Prayer times (adjust these times based on your schedule)
         const prayerTimes = [
-            { name: "الفجر", time: "05:11" },
-            { name: "الظهر", time: "11:44" },
-            { name: "العصر", time: "14:29" },
-            { name: "المغرب", time: "16:49" },
-            { name: "العشاء", time: "18:19" }
+            { name: "الفجر", time: "05:00" },
+            { name: "الظهر", time: "12:00" },
+            { name: "العصر", time: "15:30" },
+            { name: "المغرب", time: "18:00" },
+            { name: "العشاء", time: "20:00" }
         ];
 
-        // פונקציה לבדוק אם עכשיו זמן סריקה מותר
         function isWithinPrayerTime() {
             const now = new Date();
-            const currentMinutes = now.getHours() * 60 + now.getMinutes();
-
-            for (let prayer of prayerTimes) {
-                const [hours, minutes] = prayer.time.split(":").map(Number);
-                const prayerMinutes = hours * 60 + minutes;
-
-                if (currentMinutes >= prayerMinutes - 30 && currentMinutes <= prayerMinutes + 30) {
-                    return true;
-                }
-            }
-            return false;
+            const currentTime = now.getHours() * 60 + now.getMinutes();
+            return prayerTimes.some(prayer => {
+                const [hour, minute] = prayer.time.split(":").map(Number);
+                const prayerTime = hour * 60 + minute;
+                return currentTime >= prayerTime - 30 && currentTime <= prayerTime + 30;
+            });
         }
 
-        // פונקציה לקרוא ולכתוב עוגיות
         function getCookie(name) {
-            const cookies = document.cookie.split("; ");
-            for (let cookie of cookies) {
-                const [key, value] = cookie.split("=");
-                if (key === name) return value;
-            }
-            return null;
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(";").shift();
         }
 
-        function setCookie(name, value, days) {
-            const date = new Date();
-            date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
-            document.cookie = `${name}=${value}; expires=${date.toUTCString()}; path=/`;
-        }
-
-        // לוגיקה ראשית
-        const phone = getCookie("phone");
-        const name = getCookie("name");
-
-        if (!phone || !name) {
-            // אם אין עוגיות, המשתמש צריך להזין פרטים
-            const userPhone = prompt("يرجى إدخال رقم هاتفك:");
-            const userName = prompt("يرجى إدخال اسمك الكامل:");
-
-            if (userPhone && userName) {
-                firebase.database().ref('users/' + userPhone).set({
-                    name: userName,
-                    phone: userPhone,
-                    points: 0
-                }).then(() => {
-                    setCookie("phone", userPhone, 30); // שמירת עוגיה ל-30 יום
-                    setCookie("name", userName, 30);
-                    alert("تم تسجيلك بنجاح! يمكنك الآن تسجيل حضورك.");
-                    location.reload();
-                }).catch((error) => {
-                    alert("حدث خطأ أثناء تسجيل البيانات.");
-                    console.error(error);
-                });
-            } else {
-                alert("يرجى إدخال بيانات صحيحة.");
+        function handleScan() {
+            const userPhone = getCookie("user");
+            if (!userPhone) {
+                alert("يرجى تسجيل الدخول أولا.");
                 window.location.href = "login.html";
+                return;
             }
-        } else {
-            // אם המשתמש רשום, בדוק את הזמן
+
             if (!isWithinPrayerTime()) {
-                alert("لا يمكنك تسجيل الحضور الآن. يرجى المحاولة قبل 30 دقيقة أو بعد 30 دقيقة من وقت الصلاة.");
-                window.location.href = "https://www.instagram.com/your_username";
-            } else {
-                const userRef = firebase.database().ref('users/' + phone);
-                userRef.once('value').then((snapshot) => {
+                alert("التسجيل متاح فقط قبل وبعد الصلاة بـ 30 دقيقة.");
+                window.location.href = "https://instagram.com/your_username";
+                return;
+            }
+
+            const userRef = database.ref("users/" + userPhone);
+            userRef.once("value")
+                .then(snapshot => {
                     if (snapshot.exists()) {
-                        const points = snapshot.val().points + 1;
-                        userRef.update({ points: points }).then(() => {
-                            alert(`تم تسجيل الحضور بنجاح! لديك الآن ${points} نقاط.`);
-                            window.location.href = "https://www.instagram.com/your_username";
-                        });
+                        const userData = snapshot.val();
+                        const newPoints = (userData.points || 0) + 1;
+                        userRef.update({ points: newPoints })
+                            .then(() => {
+                                alert(`تم تسجيل الحضور بنجاح! نقاطك الحالية: ${newPoints}`);
+                                window.location.href = "https://instagram.com/your_username";
+                            })
+                            .catch(error => {
+                                console.error("Error updating points:", error);
+                                alert("حدث خطأ أثناء تحديث النقاط. حاول مرة أخرى.");
+                            });
                     } else {
-                        alert("رقم الهاتف غير مسجل. يرجى التسجيل أولاً.");
+                        alert("رقم الهاتف غير موجود في النظام.");
                         window.location.href = "login.html";
                     }
-                }).catch((error) => {
-                    alert("حدث خطأ أثناء تسجيل الحضور.");
-                    console.error(error);
+                })
+                .catch(error => {
+                    console.error("Error accessing database:", error);
+                    alert("فشل الاتصال بالنظام. حاول مرة أخرى.");
                 });
-            }
         }
+
+        // Trigger the scan handling
+        handleScan();
     </script>
 </body>
 </html>
