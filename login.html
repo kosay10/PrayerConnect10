@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>تسجيل الدخول</h1>
+    <form id="loginForm">
+        <label for="name">الاسم الكامل:</label>
+        <input type="text" id="name" required>
+        <label for="phone">رقم الهاتف:</label>
+        <input type="text" id="phone" required>
+        <button type="submit">تسجيل</button>
+    </form>
+
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyANgfVGiNHh4U_R2eKsGfW9mcHV7H3fKdk",
+            authDomain: "mosqueattendance.firebaseapp.com",
+            projectId: "mosqueattendance",
+            storageBucket: "mosqueattendance.firebasestorage.app",
+            messagingSenderId: "613541777430",
+            appId: "1:613541777430:web:5047a4d02dac211268e537",
+            measurementId: "G-T0G8HN00M9"
+        };
+
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database(app);
+
+        const form = document.getElementById("loginForm");
+        form.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const name = document.getElementById("name").value;
+            const phone = document.getElementById("phone").value;
+
+            firebase.database().ref('users/' + phone).set({
+                name: name,
+                phone: phone,
+                points: 0
+            }).then(() => {
+                alert("تم التسجيل بنجاح!");
+                window.location.href = "scan.html";
+            }).catch((error) => {
+                alert("حدث خطأ أثناء التسجيل.");
+                console.error(error);
+            });
+        });
+    </script>
+</body>
+</html>

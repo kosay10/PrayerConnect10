@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة الإدارة</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>لوحة الإدارة</h1>
+    <ul id="userList"></ul>
+
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyANgfVGiNHh4U_R2eKsGfW9mcHV7H3fKdk",
+            authDomain: "mosqueattendance.firebaseapp.com",
+            projectId: "mosqueattendance",
+            storageBucket: "mosqueattendance.firebasestorage.app",
+            messagingSenderId: "613541777430",
+            appId: "1:613541777430:web:5047a4d02dac211268e537",
+            measurementId: "G-T0G8HN00M9"
+        };
+
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database(app);
+
+        const userList = document.getElementById("userList");
+        firebase.database().ref('users').once('value').then((snapshot) => {
+            snapshot.forEach((childSnapshot) => {
+                const user = childSnapshot.val();
+                const li = document.createElement("li");
+                li.textContent = `${user.name} - ${user.phone} - ${user.points} نقاط`;
+                userList.appendChild(li);
+            });
+        }).catch((error) => {
+            console.error("خطأ أثناء تحميل البيانات:", error);
+        });
+    </script>
+</body>
+</html>
