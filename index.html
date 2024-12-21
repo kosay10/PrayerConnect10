@@ -4,51 +4,56 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>تسجيل الدخول</title>
-    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
 </head>
 <body>
     <h1>تسجيل الدخول</h1>
-    <form id="loginForm">
+    <form id="login-form">
         <label for="name">الاسم الكامل:</label>
-        <input type="text" id="name" required>
+        <input type="text" id="name" required><br><br>
         <label for="phone">رقم الهاتف:</label>
-        <input type="text" id="phone" required>
+        <input type="tel" id="phone" required><br><br>
         <button type="submit">تسجيل</button>
     </form>
-
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js"></script>
     <script>
+        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyANgfVGiNHh4U_R2eKsGfW9mcHV7H3fKdk",
             authDomain: "mosqueattendance.firebaseapp.com",
             projectId: "mosqueattendance",
-            storageBucket: "mosqueattendance.firebasestorage.app",
+            storageBucket: "mosqueattendance.appspot.com",
             messagingSenderId: "613541777430",
             appId: "1:613541777430:web:5047a4d02dac211268e537",
-            measurementId: "G-T0G8HN00M9"
+            measurementId: "G-T0G8HN00M9",
+            databaseURL: "https://mosqueattendance-default-rtdb.firebaseio.com/"
         };
 
+        // Initialize Firebase
         const app = firebase.initializeApp(firebaseConfig);
-        const database = firebase.database(app);
+        const database = firebase.database();
 
-        const form = document.getElementById("loginForm");
-        form.addEventListener("submit", (e) => {
-            e.preventDefault();
+        // Form submission handler
+        document.getElementById("login-form").addEventListener("submit", function(event) {
+            event.preventDefault();
             const name = document.getElementById("name").value;
             const phone = document.getElementById("phone").value;
 
-            firebase.database().ref('users/' + phone).set({
-                name: name,
-                phone: phone,
-                points: 0
-            }).then(() => {
-                alert("تم التسجيل بنجاح!");
-                window.location.href = "scan.html";
-            }).catch((error) => {
-                alert("حدث خطأ أثناء التسجيل.");
-                console.error(error);
-            });
+            if (name && phone) {
+                const userRef = database.ref("users/" + phone);
+                userRef.set({ name: name, phone: phone, points: 0 })
+                    .then(() => {
+                        document.cookie = `user=${phone}; path=/`;
+                        alert("تم التسجيل بنجاح!");
+                        window.location.href = "scan.html";
+                    })
+                    .catch((error) => {
+                        console.error("Error writing to database:", error);
+                        alert("فشل التسجيل. حاول مرة أخرى.");
+                    });
+            } else {
+                alert("يرجى ملء جميع الحقول.");
+            }
         });
     </script>
 </body>
